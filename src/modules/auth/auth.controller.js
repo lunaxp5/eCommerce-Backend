@@ -5,7 +5,33 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 const signUp = catchAsyncError(async (req, res, next) => {
-  // console.log(req.body.email);
+  /* #swagger.tags = ['Auth']
+     #swagger.description = 'Endpoint to sign up a user'
+     #swagger.parameters['user'] = {
+          in: 'body',
+          description: 'User information for sign up',
+          required: true,
+          schema: {
+              type: 'object',
+              required: ['name', 'email', 'password'],
+              properties: {
+                  name: { type: 'string', example: 'John Doe' },
+                  email: { type: 'string', example: 'johndoe@example.com' },
+                  password: { type: 'string', example: 'password123' }
+              }
+          }
+      }
+     #swagger.responses[201] = {
+          description: 'User created successfully'
+      }
+     #swagger.responses[400] = {
+          description: 'Bad request'
+      }
+     #swagger.responses[409] = {
+          description: 'Account already exists'
+      }
+  */
+
   let isUserExist = await userModel.findOne({ email: req.body.email });
   if (isUserExist) {
     return next(new AppError("Account is already exist!", 409));
@@ -21,6 +47,32 @@ const signUp = catchAsyncError(async (req, res, next) => {
 });
 
 const signIn = catchAsyncError(async (req, res, next) => {
+  /* #swagger.tags = ['Auth']
+     #swagger.description = 'Endpoint to sign in a user'
+     #swagger.parameters['user'] = {
+          in: 'body',
+          description: 'User information for sign in',
+          required: true,
+          schema: {
+              type: 'object',
+              required: ['email', 'password'],
+              properties: {
+                  email: { type: 'string', example: 'johndoe@example.com' },
+                  password: { type: 'string', example: 'password123' }
+              }
+          }
+      }
+     #swagger.responses[200] = {
+          description: 'User signed in successfully'
+      }
+     #swagger.responses[400] = {
+          description: 'Bad request'
+      }
+     #swagger.responses[401] = {
+          description: 'Unauthorized'
+      }
+  */
+
   const { email, password } = req.body;
   let user = await userModel.findOne({ email });
   if (!user || !bcrypt.compareSync(password, user.password)) {
