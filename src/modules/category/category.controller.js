@@ -6,6 +6,28 @@ import { deleteOne } from "../../handlers/factor.js";
 import { ApiFeatures } from "../../utils/ApiFeatures.js";
 
 const addCategory = catchAsyncError(async (req, res, next) => {
+  /* #swagger.tags = ['Category']
+     #swagger.description = 'Endpoint to add a new category'
+     #swagger.parameters['category'] = {
+          in: 'body',
+          description: 'Category information',
+          required: true,
+          schema: {
+              type: 'object',
+              required: ['name', 'Image'],
+              properties: {
+                  name: { type: 'string', example: 'Electronics' },
+                  Image: { type: 'string', example: 'image.jpg' }
+              }
+          }
+      }
+     #swagger.responses[201] = {
+          description: 'Category created successfully'
+      }
+     #swagger.responses[400] = {
+          description: 'Bad request'
+      }
+  */
   console.log(req.file);
   req.body.Image = req.file.filename;
   req.body.slug = slugify(req.body.name);
@@ -16,6 +38,28 @@ const addCategory = catchAsyncError(async (req, res, next) => {
 });
 
 const getAllCategories = catchAsyncError(async (req, res, next) => {
+  /* #swagger.tags = ['Category']
+     #swagger.description = 'Endpoint to get all categories'
+     #swagger.parameters['query'] = {
+          in: 'query',
+          description: 'Query parameters for filtering, pagination, etc.',
+          required: false,
+          type: 'object',
+          properties: {
+              page: { type: 'integer', example: 1 },
+              limit: { type: 'integer', example: 10 },
+              fields: { type: 'string', example: 'name,slug' },
+              sort: { type: 'string', example: 'name' }
+          }
+      }
+     #swagger.responses[200] = {
+          description: 'A list of categories'
+      }
+     #swagger.responses[400] = {
+          description: 'Bad request'
+      }
+  */
+
   let apiFeature = new ApiFeatures(categoryModel.find(), req.query)
     .pagination()
     .fields()

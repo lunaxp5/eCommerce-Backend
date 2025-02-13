@@ -19,6 +19,8 @@ const addProduct = catchAsyncError(async (req, res, next) => {
 });
 
 const getAllProducts = catchAsyncError(async (req, res, next) => {
+  const baseUrl = process.env.BASE_URL || "http://localhost:3000/";
+
   let apiFeature = new ApiFeatures(productModel.find(), req.query)
     .pagination()
     .fields()
@@ -27,6 +29,17 @@ const getAllProducts = catchAsyncError(async (req, res, next) => {
     .sort();
   const PAGE_NUMBER = apiFeature.queryString.page * 1 || 1;
   const getAllProducts = await apiFeature.mongooseQuery;
+
+  getAllProducts.forEach((product) => {
+    if (product.imgCover) {
+      product.imgCover = `${baseUrl}uploads/${product.imgCover}`;
+    }
+    if (product.images) {
+      product.images = product.images.map(
+        (image) => `${baseUrl}uploads/${image}`
+      );
+    }
+  });
 
   res
     .status(201)

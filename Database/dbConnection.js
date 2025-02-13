@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 export function dbConnection() {
   mongoose
-    .connect(`mongodb+srv://ecommerce:ecommerce123@cluster0.b649qmo.mongodb.net/Ecommerce-App`)
+    .connect(`mongodb+srv://lunaxp5:Abc.1234@cluster0.tbdzmog.mongodb.net/`)
     .then(() => {
       console.log("DB Connected Succesfully");
     })
@@ -11,6 +11,4 @@ export function dbConnection() {
     });
 }
 
-
 //Use this is postman https://ecommerce-backend-codv.onrender.com/api/v1/auth/signup
-

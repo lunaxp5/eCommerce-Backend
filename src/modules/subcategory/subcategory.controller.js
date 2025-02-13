@@ -7,6 +7,7 @@ import { ApiFeatures } from "../../utils/ApiFeatures.js";
 
 const addSubCategory = catchAsyncError(async (req, res, next) => {
   req.body.slug = slugify(req.body.name);
+
   const addSubcategory = new subCategoryModel(req.body);
   await addSubcategory.save();
 
@@ -17,7 +18,6 @@ const getAllSubCategories = catchAsyncError(async (req, res, next) => {
   console.log(req.params);
   let filterObj = {};
 
-  
   if (req.params.category) {
     filterObj = { category: req.params.category };
   }
