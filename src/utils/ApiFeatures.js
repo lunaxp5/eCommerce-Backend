@@ -57,7 +57,7 @@ export class ApiFeatures {
       this.mongooseQuery.find({
         $or: [
           { title: { $regex: this.queryString.keyword, $options: "i" } },
-          { descripton: { $regex: this.queryString.keyword, $options: "i" } },
+          { description: { $regex: this.queryString.keyword, $options: "i" } },
         ],
       });
     }

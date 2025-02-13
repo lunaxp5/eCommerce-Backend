@@ -21,7 +21,7 @@ productRouter
   .route("/")
   .post(
     protectedRoutes,
-    allowedTo("admin", "user"),
+    allowedTo("admin"),
     uploadMultipleFiles(arrFields, "products"),
     validate(addProductValidation),
     product.addProduct
