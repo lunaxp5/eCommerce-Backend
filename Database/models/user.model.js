@@ -18,7 +18,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    passwordChangedAt:Date,
+    passwordChangedAt: Date,
     role: {
       type: String,
       enum: ["admin", "user"],
@@ -36,13 +36,18 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    
-    wishlist:[{type:Schema.ObjectId,ref : 'product'}],
-    addresses:[{
-      city:String,
-      street:String,
-      phone:String
-    }]
+
+    wishlist: [{ type: Schema.ObjectId, ref: "product" }],
+    addresses: [
+      {
+        city: String,
+        street: String,
+        state: String,
+        zipCode: String,
+        country: String,
+        phone: String,
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -52,10 +57,9 @@ userSchema.pre("save", function () {
 });
 
 userSchema.pre("findOneAndUpdate", function () {
-    if(this._update.password){
-        this._update.password = bcrypt.hashSync(this._update.password, 8);
-    }
- 
+  if (this._update.password) {
+    this._update.password = bcrypt.hashSync(this._update.password, 8);
+  }
 });
 
 export const userModel = model("user", userSchema);
