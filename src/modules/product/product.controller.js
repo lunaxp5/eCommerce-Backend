@@ -28,8 +28,6 @@ const getAllProducts = catchAsyncError(async (req, res, next) => {
   const PAGE_NUMBER = apiFeature.queryString.page * 1 || 1;
   const getAllProducts = await apiFeature.mongooseQuery;
 
-  console.log(getAllProducts);
-
   res
     .status(201)
     .json({ page: PAGE_NUMBER, message: "success", getAllProducts });
