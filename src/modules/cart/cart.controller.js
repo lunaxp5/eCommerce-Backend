@@ -108,17 +108,18 @@ const applyCoupon = catchAsyncError(async (req, res, next) => {
   res.status(201).json({ message: "success", cart });
 });
 
-const getLoggedUserCart = catchAsyncError(async (req,res,next)=>{
+const getLoggedUserCart = catchAsyncError(async (req, res, next) => {
+  let cartItems = await cartModel
+    .findOne({ userId: req.user._id }) // Find the cart by the logged-in user's ID
+    .populate("cartItem.productId"); // Populate product details for each cart item
 
-  let cartItems = await cartModel.findOne({userId:req.user._id}).populate('cartItem.productId')
-
-  res.status(200).json({message:"success",cart : cartItems})
-})
+  res.status(200).json({ message: "success", cart: cartItems }); // Respond with the cart data
+});
 
 export {
   addProductToCart,
   removeProductFromCart,
   updateProductQuantity,
   applyCoupon,
-  getLoggedUserCart
+  getLoggedUserCart,
 };
