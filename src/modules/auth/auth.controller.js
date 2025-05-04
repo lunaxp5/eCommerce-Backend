@@ -3,6 +3,7 @@ import { AppError } from "../../utils/AppError.js";
 import { catchAsyncError } from "../../utils/catchAsyncError.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import nodemailer from "nodemailer"; // Import nodemailer for sending emails
 
 const signUp = catchAsyncError(async (req, res, next) => {
   /* #swagger.tags = ['Auth']
@@ -86,6 +87,8 @@ const signIn = catchAsyncError(async (req, res, next) => {
 });
 
 const protectedRoutes = catchAsyncError(async (req, res, next) => {
+  console.log(req.headers);
+
   const { token } = req.headers;
   if (!token) return next(new AppError("Token was not provided!", 401));
 
@@ -122,4 +125,66 @@ const allowedTo = (...roles) => {
     next();
   });
 };
-export { signUp, signIn, protectedRoutes, allowedTo };
+
+const forgotPassword = catchAsyncError(async (req, res, next) => {
+  /* #swagger.tags = ['Auth']
+     #swagger.description = 'Endpoint to request a password reset token'
+     #swagger.parameters['email'] = {
+          in: 'body',
+          description: 'Email of the user requesting password reset',
+          required: true,
+          schema: {
+              type: 'object',
+              required: ['email'],
+              properties: {
+                  email: { type: 'string', example: 'johndoe@example.com' }
+              }
+          }
+      }
+     #swagger.responses[200] = {
+          description: 'Password reset token sent successfully'
+      }
+     #swagger.responses[404] = {
+          description: 'Email not found'
+      }
+  */
+
+  const { email } = req.body;
+
+  // Check if the email exists in the database
+  const user = await userModel.findOne({ email });
+  if (!user) {
+    return next(new AppError("Email not found", 404));
+  }
+
+  // Generate a JWT token with a 1-hour expiration
+  const token = jwt.sign({ email: user.email, id: user._id }, "JR", {
+    expiresIn: "1h",
+  });
+
+  // Configure nodemailer to send the email
+  const transporter = nodemailer.createTransport({
+    service: "gmail", // Use your email service provider
+    auth: {
+      user: "your-email@example.com", // Replace with your email
+      pass: "your-email-password", // Replace with your email password or app password
+    },
+  });
+
+  const mailOptions = {
+    from: "your-email@example.com", // Replace with your email
+    to: email,
+    subject: "Password Reset Request",
+    text: `You requested a password reset. Use the following token to reset your password: ${token}`,
+  };
+
+  // Send the email
+  await transporter.sendMail(mailOptions);
+
+  res.status(200).json({
+    message: "Password reset token sent successfully",
+    token, // Optionally include the token in the response for testing purposes
+  });
+});
+
+export { signUp, signIn, protectedRoutes, allowedTo, forgotPassword };
