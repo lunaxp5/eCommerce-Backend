@@ -14,11 +14,12 @@ const stripe = new Stripe(
 // Helper function to check stock and update it
 async function checkAndUpdateStock(cartItems) {
   for (let item of cartItems) {
-    const product = await productModel.findById(item.product);
-    if (!product || product.quantity < item.quantity) {
+    // item.productId is the populated product document
+    // item.quantity is the quantity requested in the cart
+    if (!item.productId || item.productId.quantity < item.quantity) {
       throw new AppError(
         `Product ${
-          product?.name || item.product
+          item.productId?.name || "Unknown Product"
         } is out of stock or quantity unavailable.`,
         400
       );
@@ -28,7 +29,7 @@ async function checkAndUpdateStock(cartItems) {
   // This should be done atomically if possible, or within a transaction in a replica set environment
   for (let item of cartItems) {
     await productModel.findByIdAndUpdate(
-      item.product,
+      item.productId._id, // Use the _id of the populated product
       { $inc: { quantity: -item.quantity, sold: item.quantity } },
       { new: true } // ensure to get the updated document if needed, though not strictly necessary here
     );
@@ -55,11 +56,13 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
     ); // Changed from Spanish to English
   }
 
-  const cart = await cartModel.findById(cartId).populate("cartItems.product");
-  if (!cart || cart.user.toString() !== userId.toString()) {
+  const cart = await cartModel.findById(cartId).populate("cartItem.productId"); // Corrected population path
+  if (!cart || cart.userId.toString() !== userId.toString()) {
+    // Changed cart.user to cart.userId
     return next(new AppError("Cart not found or does not belong to user", 404));
   }
-  if (cart.cartItems.length === 0) {
+  if (cart.cartItem.length === 0) {
+    // Changed cart.cartItems to cart.cartItem
     return next(new AppError("Cannot create order from an empty cart", 400));
   }
 
@@ -74,17 +77,18 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
 
   // Check and update stock
   try {
-    await checkAndUpdateStock(cart.cartItems);
+    await checkAndUpdateStock(cart.cartItem); // Changed cart.cartItems to cart.cartItem
   } catch (error) {
     return next(error);
   }
 
   // Prepare order items with historical pricing and naming
-  const orderItems = cart.cartItems.map((item) => ({
-    product: item.product._id,
-    name: item.product.name, // Store current name
+  const orderItems = cart.cartItem.map((item) => ({
+    // Changed cart.cartItems to cart.cartItem
+    product: item.productId._id, // Changed item.product._id to item.productId._id
+    name: item.productId.name, // Changed item.product.name to item.productId.name
     quantity: item.quantity,
-    price: item.product.priceAfterDiscount || item.product.price, // Store current price
+    price: item.productId.priceAfterDiscount || item.productId.price, // Changed item.product.price to item.productId.price
   }));
 
   const totalOrderPrice = cart.totalPriceAfterDiscount || cart.totalPrice;
@@ -128,7 +132,7 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
   await order.save();
 
   // Optionally, clear the cart after order creation
-  // await cartModel.findByIdAndDelete(cartId);
+  await cartModel.findByIdAndDelete(cartId);
 
   res.status(201).json({
     message:
