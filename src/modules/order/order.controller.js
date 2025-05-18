@@ -132,13 +132,11 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
   // Optionally, clear the cart after order creation
   // await cartModel.findByIdAndDelete(cartId);
 
-  res
-    .status(201)
-    .json({
-      message:
-        "Order created successfully. You have 20 minutes to complete the payment.",
-      order,
-    });
+  res.status(201).json({
+    message:
+      "Order created successfully. You have 20 minutes to complete the payment.",
+    order,
+  });
 });
 
 export const getUserOrders = catchAsyncError(async (req, res, next) => {
@@ -228,7 +226,7 @@ export const cancelExpiredOrders = async () => {
 // Example of setting up a simple interval check (not for production, use a proper cron job tool)
 // setInterval(cancelExpiredOrders, 60 * 1000); // Check every minute
 
-const createCheckOutSession = catchAsyncError(async (req, res, next) => {
+export const createCheckOutSession = catchAsyncError(async (req, res, next) => {
   let cart = await cartModel.findById(req.params.id);
   if (!cart) return next(new AppError("Cart was not found", 404));
 
@@ -262,7 +260,7 @@ const createCheckOutSession = catchAsyncError(async (req, res, next) => {
   res.json({ message: "success", sessions });
 });
 
-const createOnlineOrder = catchAsyncError(async (request, response) => {
+export const createOnlineOrder = catchAsyncError(async (request, response) => {
   const sig = request.headers["stripe-signature"].toString();
 
   let event;
@@ -320,14 +318,3 @@ async function card(e, res) {
     next(new AppError("Error in cart ID", 404));
   }
 }
-
-export {
-  createOrder,
-  getUserOrders,
-  getSpecificOrder,
-  getAllOrders,
-  updateOrderStatus,
-  cancelExpiredOrders,
-  createCheckOutSession,
-  createOnlineOrder,
-};
