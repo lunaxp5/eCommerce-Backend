@@ -48,6 +48,12 @@ const userSchema = new Schema(
         phone: String,
       },
     ],
+    billingDetails: {
+      name: String, // razonSocial -> name
+      address: String, // direccion -> address
+      phone: String, // telefono -> phone
+      dni: String,
+    },
   },
   { timestamps: true }
 );

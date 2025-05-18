@@ -3,73 +3,237 @@ import { AppError } from "../../utils/AppError.js";
 import { cartModel } from "../../../Database/models/cart.model.js";
 import { productModel } from "../../../Database/models/product.model.js";
 import { orderModel } from "../../../Database/models/order.model.js";
+import { userModel } from "../../../Database/models/user.model.js";
+import { paymentMethodModel } from "../../../Database/models/paymentMethod.model.js"; // Assuming you have this model
 
 import Stripe from "stripe";
-import { userModel } from "../../../Database/models/user.model.js";
 const stripe = new Stripe(
   "sk_test_51NV8e0HVbfRYk4SfG3Ul84cabreiXkPbW1xMugwqvU9is2Z2ICEafTtG6NHLIUdFVIjkiRHYmAPKxCLsCpoU2NnN00LVpHcixz"
 );
 
-const createCashOrder = catchAsyncError(async (req, res, next) => {
-  let cart = await cartModel.findById(req.params.id);
+// Helper function to check stock and update it
+async function checkAndUpdateStock(cartItems) {
+  for (let item of cartItems) {
+    const product = await productModel.findById(item.product);
+    if (!product || product.quantity < item.quantity) {
+      throw new AppError(
+        `Product ${
+          product?.name || item.product
+        } is out of stock or quantity unavailable.`,
+        400
+      );
+    }
+  }
+  // If all products are available, decrement stock
+  // This should be done atomically if possible, or within a transaction in a replica set environment
+  for (let item of cartItems) {
+    await productModel.findByIdAndUpdate(
+      item.product,
+      { $inc: { quantity: -item.quantity, sold: item.quantity } },
+      { new: true } // ensure to get the updated document if needed, though not strictly necessary here
+    );
+  }
+}
 
-  // console.log(cart);
-  let totalOrderPrice = cart.totalPriceAfterDiscount
-    ? cart.totalPriceAfterDiscount
-    : cart.totalPrice;
+export const createOrder = catchAsyncError(async (req, res, next) => {
+  const { cartId, billingDetails, shippingAddress, paymentMethodId } = req.body;
+  const userId = req.user._id; // Assuming user ID is available from auth middleware
 
-  console.log(cart.cartItem);
+  // Validate that shippingAddress is provided and has the required fields
+  if (
+    !shippingAddress ||
+    !shippingAddress.address ||
+    !shippingAddress.name ||
+    !shippingAddress.phone
+  ) {
+    // Changed from Spanish to English
+    return next(
+      new AppError(
+        "Shipping address with address, name, and phone is required.",
+        400
+      )
+    ); // Changed from Spanish to English
+  }
+
+  const cart = await cartModel.findById(cartId).populate("cartItems.product");
+  if (!cart || cart.user.toString() !== userId.toString()) {
+    return next(new AppError("Cart not found or does not belong to user", 404));
+  }
+  if (cart.cartItems.length === 0) {
+    return next(new AppError("Cannot create order from an empty cart", 400));
+  }
+
+  // Verify payment method
+  const paymentMethod = await paymentMethodModel.findById(paymentMethodId);
+  if (!paymentMethod) {
+    return next(new AppError("Invalid payment method ID", 400));
+  }
+  if (!paymentMethod.isActive) {
+    return next(new AppError("Selected payment method is not active", 400));
+  }
+
+  // Check and update stock
+  try {
+    await checkAndUpdateStock(cart.cartItems);
+  } catch (error) {
+    return next(error);
+  }
+
+  // Prepare order items with historical pricing and naming
+  const orderItems = cart.cartItems.map((item) => ({
+    product: item.product._id,
+    name: item.product.name, // Store current name
+    quantity: item.quantity,
+    price: item.product.priceAfterDiscount || item.product.price, // Store current price
+  }));
+
+  const totalOrderPrice = cart.totalPriceAfterDiscount || cart.totalPrice;
+
+  // Determine billing details: use provided or user's saved details
+  let finalBillingDetails = billingDetails;
+  if (!finalBillingDetails || Object.keys(finalBillingDetails).length === 0) {
+    const user = await userModel.findById(userId);
+    if (
+      user &&
+      user.billingDetails &&
+      Object.keys(user.billingDetails).length > 0
+    ) {
+      finalBillingDetails = user.billingDetails;
+    } else {
+      return next(
+        new AppError(
+          "Billing details are required and not found in user profile.",
+          400
+        )
+      );
+    }
+  } else {
+    // Optionally, save/update user's billing details if new ones are provided
+    await userModel.findByIdAndUpdate(
+      userId,
+      { billingDetails },
+      { new: true }
+    );
+  }
+
   const order = new orderModel({
-    userId: req.user._id,
-    cartItem: cart.cartItem,
+    user: userId,
+    cartItems: orderItems,
     totalOrderPrice,
-    shippingAddress: req.body.shippingAddress,
+    billingDetails: finalBillingDetails,
+    shippingAddress: shippingAddress, // Directly use the provided shippingAddress
+    paymentMethod: paymentMethodId,
+    status: "pendingPayment",
+    // expiresAt will be set by the pre-save hook
   });
 
   await order.save();
 
-  // console.log(order);
-  if (order) {
-    let options = cart.cartItem.map((item) => ({
-      updateOne: {
-        filter: { _id: item.productId },
-        update: { $inc: { quantity: -item.quantity, sold: item.quantity } },
-      },
-    }));
+  // Optionally, clear the cart after order creation
+  // await cartModel.findByIdAndDelete(cartId);
 
-    await productModel.bulkWrite(options);
+  res
+    .status(201)
+    .json({
+      message:
+        "Order created successfully. You have 20 minutes to complete the payment.",
+      order,
+    });
+});
 
-    await cartModel.findByIdAndDelete(req.params.id);
+export const getUserOrders = catchAsyncError(async (req, res, next) => {
+  const userId = req.user._id;
+  const orders = await orderModel
+    .find({ user: userId })
+    .populate("cartItems.product paymentMethod");
+  res.status(200).json({ orders });
+});
 
-    return res.status(201).json({ message: "success", order });
-  } else {
-    next(new AppError("Error in cart ID", 404));
+export const getSpecificOrder = catchAsyncError(async (req, res, next) => {
+  const orderId = req.params.id;
+  const userId = req.user._id; // Or admin check
+
+  const order = await orderModel
+    .findOne({ _id: orderId, user: userId })
+    .populate("cartItems.product paymentMethod");
+  // Admin might need to find any order: await orderModel.findById(orderId).populate(...);
+
+  if (!order) {
+    return next(
+      new AppError(
+        "Order not found or you do not have permission to view it",
+        404
+      )
+    );
   }
+  res.status(200).json({ order });
 });
 
-const getSpecificOrder = catchAsyncError(async (req, res, next) => {
-  console.log(req.user._id);
-
-  let order = await orderModel
-    .findOne({ userId: req.user._id })
-    .populate("cartItems.productId");
-
-  res.status(200).json({ message: "success", order });
+// Placeholder for admin to get all orders
+export const getAllOrders = catchAsyncError(async (req, res, next) => {
+  const orders = await orderModel
+    .find()
+    .populate("user cartItems.product paymentMethod");
+  res.status(200).json({ orders });
 });
 
-const getAllOrders = catchAsyncError(async (req, res, next) => {
-  let orders = await orderModel.findOne({}).populate("cartItems.productId");
+// Placeholder for updating order status (e.g., by admin)
+export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
+  const orderId = req.params.id;
+  const { status } = req.body; // e.g., "paid", "shipped", "delivered", "cancelled"
 
-  res.status(200).json({ message: "success", orders });
+  const order = await orderModel.findByIdAndUpdate(
+    orderId,
+    { status },
+    { new: true }
+  );
+  if (!order) {
+    return next(new AppError("Order not found", 404));
+  }
+  if (status === "paid" && !order.isPaid) {
+    order.isPaid = true;
+    order.paidAt = Date.now();
+    order.expiresAt = null; // Payment completed, remove expiration
+    await order.save();
+  }
+  res.status(200).json({ message: "Order status updated", order });
 });
+
+// Function to cancel expired orders (could be run by a cron job)
+export const cancelExpiredOrders = async () => {
+  const now = new Date();
+  const expiredOrders = await orderModel.find({
+    status: "pendingPayment",
+    expiresAt: { $lte: now },
+  });
+
+  if (expiredOrders.length > 0) {
+    console.log(`Found ${expiredOrders.length} expired orders to cancel.`);
+    for (const order of expiredOrders) {
+      order.status = "expired";
+      await order.save();
+      // Add stock back
+      for (const item of order.cartItems) {
+        await productModel.findByIdAndUpdate(item.product, {
+          $inc: { quantity: item.quantity, sold: -item.quantity },
+        });
+      }
+      console.log(`Order ${order._id} cancelled and stock restored.`);
+    }
+  } else {
+    console.log("No expired orders found.");
+  }
+};
+
+// Example of setting up a simple interval check (not for production, use a proper cron job tool)
+// setInterval(cancelExpiredOrders, 60 * 1000); // Check every minute
 
 const createCheckOutSession = catchAsyncError(async (req, res, next) => {
   let cart = await cartModel.findById(req.params.id);
-  if(!cart) return next(new AppError("Cart was not found",404))
+  if (!cart) return next(new AppError("Cart was not found", 404));
 
   console.log(cart);
 
-  // console.log(cart);
   let totalOrderPrice = cart.totalPriceAfterDiscount
     ? cart.totalPriceAfterDiscount
     : cart.totalPrice;
@@ -115,37 +279,30 @@ const createOnlineOrder = catchAsyncError(async (request, response) => {
 
   // Handle the event
   if (event.type == "checkout.session.completed") {
-    // const checkoutSessionCompleted = event.data.object;
-    card(event.data.object,response)
-
-
+    card(event.data.object, response);
   } else {
     console.log(`Unhandled event type ${event.type}`);
   }
 });
 
-//https://ecommerce-backend-codv.onrender.com/api/v1/orders/checkOut/6536c48750fab46f309bb950
-
-
-async function card (e,res){
+async function card(e, res) {
   let cart = await cartModel.findById(e.client_reference_id);
 
-  if(!cart) return next(new AppError("Cart was not found",404))
+  if (!cart) return next(new AppError("Cart was not found", 404));
 
-  let user = await userModel.findOne({email:e.customer_email})
+  let user = await userModel.findOne({ email: e.customer_email });
   const order = new orderModel({
     userId: user._id,
     cartItem: cart.cartItem,
-    totalOrderPrice : e.amount_total/100,
+    totalOrderPrice: e.amount_total / 100,
     shippingAddress: e.metadata.shippingAddress,
-    paymentMethod:"card",
-    isPaid:true,
-    paidAt:Date.now()
+    paymentMethod: "card",
+    isPaid: true,
+    paidAt: Date.now(),
   });
 
   await order.save();
 
-  // console.log(order);
   if (order) {
     let options = cart.cartItem.map((item) => ({
       updateOne: {
@@ -156,7 +313,7 @@ async function card (e,res){
 
     await productModel.bulkWrite(options);
 
-    await cartModel.findOneAndDelete({userId: user._id});
+    await cartModel.findOneAndDelete({ userId: user._id });
 
     return res.status(201).json({ message: "success", order });
   } else {
@@ -165,9 +322,12 @@ async function card (e,res){
 }
 
 export {
-  createCashOrder,
+  createOrder,
+  getUserOrders,
   getSpecificOrder,
   getAllOrders,
+  updateOrderStatus,
+  cancelExpiredOrders,
   createCheckOutSession,
   createOnlineOrder,
 };
