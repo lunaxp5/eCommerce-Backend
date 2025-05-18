@@ -17,10 +17,10 @@ const orderSchema = new mongoose.Schema(
     ],
     totalOrderPrice: Number,
     billingDetails: {
-      name: { type: String, required: true }, // razonSocial -> name
-      address: { type: String, required: true }, // direccion -> address
-      phone: { type: String, required: true }, // telefono -> phone
-      dni: { type: String, required: true }, // Documento Nacional de Identidad
+      name: { type: String }, // razonSocial -> name
+      address: { type: String }, // direccion -> address
+      phone: { type: String }, // telefono -> phone
+      dni: { type: String }, // Documento Nacional de Identidad
     },
     shippingAddress: {
       address: { type: String, required: true }, // direccion -> address

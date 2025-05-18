@@ -89,9 +89,20 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
 
   const totalOrderPrice = cart.totalPriceAfterDiscount || cart.totalPrice;
 
-  // Determine billing details: use provided or user's saved details
-  let finalBillingDetails = billingDetails;
-  if (!finalBillingDetails || Object.keys(finalBillingDetails).length === 0) {
+  // Determine billing details
+  let finalBillingDetails = {}; // Default to empty object
+
+  if (billingDetails && Object.keys(billingDetails).length > 0) {
+    // If billingDetails are provided in the request body
+    finalBillingDetails = billingDetails;
+    // Optionally, save/update user's billing details
+    await userModel.findByIdAndUpdate(
+      userId,
+      { billingDetails: finalBillingDetails }, // Save the provided details
+      { new: true, runValidators: true }
+    );
+  } else {
+    // If no billingDetails in request body, try to use user's saved details
     const user = await userModel.findById(userId);
     if (
       user &&
@@ -99,21 +110,8 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
       Object.keys(user.billingDetails).length > 0
     ) {
       finalBillingDetails = user.billingDetails;
-    } else {
-      return next(
-        new AppError(
-          "Billing details are required and not found in user profile.",
-          400
-        )
-      );
     }
-  } else {
-    // Optionally, save/update user's billing details if new ones are provided
-    await userModel.findByIdAndUpdate(
-      userId,
-      { billingDetails },
-      { new: true }
-    );
+    // If user also doesn't have billingDetails, finalBillingDetails remains {}
   }
 
   const order = new orderModel({
