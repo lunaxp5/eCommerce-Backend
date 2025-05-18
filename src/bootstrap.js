@@ -12,6 +12,7 @@ import subCategoryRouter from "./modules/subcategory/subcategory.routes.js";
 import userRouter from "./modules/user/user.routes.js";
 import wishListRouter from "./modules/wishlist/wishlist.routes.js";
 import paymentMethodRouter from "./modules/paymentMethod/paymentMethod.routes.js";
+import paymentReportRouter from "./modules/paymentReport/paymentReport.routes.js"; // Added paymentReportRouter
 import { AppError } from "./utils/AppError.js";
 
 export function bootstrap(app) {
@@ -28,6 +29,7 @@ export function bootstrap(app) {
   app.use("/api/v1/carts", cartRouter);
   app.use("/api/v1/orders", orderRouter);
   app.use("/api/v1/paymentMethods", paymentMethodRouter);
+  app.use("/api/v1/paymentReports", paymentReportRouter); // Added paymentReportRouter
 
   app.all("*", (req, res, next) => {
     next(new AppError("Endpoint was not found", 404));

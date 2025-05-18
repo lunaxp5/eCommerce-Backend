@@ -20,6 +20,11 @@ const paymentMethodSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isPayableManually: {
+      // Added new field
+      type: Boolean,
+      default: true, // Default to false, assuming most are not manually payable
+    },
     // Optional: Add a slug for user-friendly URLs if needed
     // slug: {
     //   type: String,
