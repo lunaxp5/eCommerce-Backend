@@ -56,16 +56,19 @@ const addProductToCart = catchAsyncError(async (req, res, next) => {
 const removeProductFromCart = catchAsyncError(async (req, res, next) => {
   let result = await cartModel.findOneAndUpdate(
     { userId: req.user._id },
-    { $pull: { cartItem: { _id: req.params.id } } },
+    { $pull: { cartItem: { productId: req.params.id } } },
     { new: true }
   );
-  !result && next(new AppError("Item was not found"), 404);
+  if (!result) return next(new AppError("Item was not found", 404));
+
   calcTotalPrice(result);
   if (result.discount) {
     result.totalPriceAfterDiscount =
       result.totalPrice - (result.totalPrice * result.discount) / 100;
   }
-  result && res.status(200).json({ message: "success", cart: result });
+
+  await result.save();
+  res.status(200).json({ message: "success", cart: result });
 });
 
 const updateProductQuantity = catchAsyncError(async (req, res, next) => {
