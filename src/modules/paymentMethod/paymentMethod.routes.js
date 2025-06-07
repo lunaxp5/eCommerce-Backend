@@ -35,7 +35,6 @@ paymentMethodRouter
   .route("/:id")
   .get(
     protectedRoutes,
-    allowedTo("admin"),
     validate(objectIdSchema), // Add validation for ID
     paymentMethodController.getPaymentMethod
   )
