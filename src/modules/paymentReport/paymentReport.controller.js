@@ -76,6 +76,10 @@ export const createPaymentReport = catchAsyncError(async (req, res, next) => {
 
   await paymentReport.save();
 
+  // Cambiar el estado de la orden a 'paymentReported' cuando el usuario reporta el pago
+  order.status = "paymentReported";
+  await order.save();
+
   res.status(201).json({
     message: "Payment report submitted successfully. It will be verified soon.",
     paymentReport,

@@ -37,6 +37,7 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: [
         "pendingPayment",
+        "paymentReported", // Nuevo estado para cuando el usuario reporta el pago
         "paid",
         "processing",
         "shipped",
