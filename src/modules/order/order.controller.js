@@ -5,6 +5,7 @@ import { productModel } from "../../../Database/models/product.model.js";
 import { orderModel } from "../../../Database/models/order.model.js";
 import { userModel } from "../../../Database/models/user.model.js";
 import { paymentMethodModel } from "../../../Database/models/paymentMethod.model.js"; // Assuming you have this model
+import { sendPushNotification } from "../../utils/sendPushNotification.js";
 
 import Stripe from "stripe";
 const stripe = new Stripe(
@@ -196,6 +197,13 @@ export const updateOrderStatus = catchAsyncError(async (req, res, next) => {
     order.expiresAt = null; // Payment completed, remove expiration
     await order.save();
   }
+  // Notificación push automática al usuario cuando cambia el estado
+  await sendPushNotification(
+    order.user,
+    "Actualización de tu orden",
+    `El estado de tu orden ha cambiado a: ${order.status}`,
+    { orderId: order._id, status: order.status }
+  );
   res.status(200).json({ message: "Order status updated", order });
 });
 

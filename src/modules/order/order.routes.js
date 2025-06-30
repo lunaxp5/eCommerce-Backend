@@ -44,7 +44,7 @@ orderRouter.put(
   "/:id/status",
   protectedRoutes,
   allowedTo("admin"),
-  validate(objectIdSchema), // Validate order ID format
+  // validate(objectIdSchema), // Validate order ID format
   // validate(updateOrderStatusSchema), // Add validation for updating order status
   orderController.updateOrderStatus
 );

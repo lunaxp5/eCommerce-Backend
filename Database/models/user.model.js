@@ -54,6 +54,10 @@ const userSchema = new Schema(
       phone: String, // telefono -> phone
       dni: String,
     },
+    pushToken: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
