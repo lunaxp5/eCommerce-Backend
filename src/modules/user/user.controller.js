@@ -118,6 +118,13 @@ const updatePushToken = catchAsyncError(async (req, res, next) => {
   res.status(200).json({ message: "Push token updated", userId, token });
 });
 
+// Obtener el perfil del usuario autenticado
+const getProfile = catchAsyncError(async (req, res, next) => {
+  const user = await userModel.findById(req.user._id).select("-password");
+  if (!user) return next(new AppError("User not found", 404));
+  res.status(200).json({ message: "success", user });
+});
+
 export {
   addUser,
   getAllUsers,
@@ -127,4 +134,5 @@ export {
   savePushToken,
   testPushNotification,
   updatePushToken,
+  getProfile,
 };

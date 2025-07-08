@@ -7,6 +7,7 @@ import {
   deleteUserValidation,
   updateUserValidation,
 } from "./user.validation.js";
+import { protectedRoutes } from "../auth/auth.controller.js";
 
 const userRouter = express.Router();
 
@@ -24,5 +25,6 @@ userRouter
 userRouter.post("/push-token", User.savePushToken);
 userRouter.post("/test-push", User.testPushNotification);
 userRouter.post("/update-push-token", User.updatePushToken);
+userRouter.get("/me", protectedRoutes, User.getProfile);
 
 export default userRouter;
