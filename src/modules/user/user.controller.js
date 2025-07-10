@@ -28,11 +28,46 @@ const getAllUsers = catchAsyncError(async (req, res, next) => {
 
 const updateUser = catchAsyncError(async (req, res, next) => {
   const { id } = req.params;
-  const updateUser = await userModel.findByIdAndUpdate(id, req.body, {
+  const { currentPassword, name, email } = req.body;
+  // Solo permitir actualizar nombre y correo
+  const updateFields = {};
+  if (name) updateFields.name = name;
+  if (email) updateFields.email = email;
+  // Solo el usuario dueño o un admin pueden actualizar
+  if (req.user.role !== "admin" && req.user._id.toString() !== id) {
+    return next(new AppError("Not authorized to update this user", 403));
+  }
+  // Si es admin, no requiere password
+  if (req.user.role === "admin") {
+    const updateUser = await userModel.findByIdAndUpdate(id, updateFields, {
+      new: true,
+    });
+    return updateUser
+      ? res.status(201).json({ message: "success", updateUser })
+      : next(new AppError("User was not found", 404));
+  }
+  // Si es el mismo usuario, requiere password
+  if (!currentPassword) {
+    return next(new AppError("Password is required to update profile", 400));
+  }
+  const user = await userModel.findById(id);
+  if (!user) return next(new AppError("User was not found", 404));
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return next(new AppError("Incorrect password", 401));
+  }
+  const updateUser = await userModel.findByIdAndUpdate(id, updateFields, {
     new: true,
   });
 
-  updateUser && res.status(201).json({ message: "success", updateUser });
+  updateUser &&
+    res.status(201).json({
+      message: "success",
+      user: {
+        name: updateUser.name,
+        email: updateUser.email,
+      },
+    });
 
   !updateUser && next(new AppError("User was not found", 404));
 });

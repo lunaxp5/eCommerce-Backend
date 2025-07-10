@@ -18,9 +18,13 @@ userRouter
 
 userRouter
   .route("/:id")
-  .put(validate(updateUserValidation), User.updateUser)
-  .delete(validate(deleteUserValidation), User.deleteUser)
-  .patch(validate(changeUserPasswordValidation), User.changeUserPassword);
+  .put(protectedRoutes, validate(updateUserValidation), User.updateUser)
+  .delete(protectedRoutes, validate(deleteUserValidation), User.deleteUser)
+  .patch(
+    protectedRoutes,
+    validate(changeUserPasswordValidation),
+    User.changeUserPassword
+  );
 
 userRouter.post("/push-token", User.savePushToken);
 userRouter.post("/test-push", User.testPushNotification);
