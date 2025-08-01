@@ -87,8 +87,6 @@ const signIn = catchAsyncError(async (req, res, next) => {
 });
 
 const protectedRoutes = catchAsyncError(async (req, res, next) => {
-  console.log(req.headers);
-
   const { token } = req.headers;
   if (!token) return next(new AppError("Token was not provided!", 401));
 

@@ -10,7 +10,6 @@ const updateUserValidation = Joi.object({
   name: Joi.string().trim(),
   email: Joi.string().email().trim(),
   currentPassword: Joi.string(),
-  id: Joi.string().hex().length(24).required(),
 });
 
 const changeUserPasswordValidation = Joi.object({
