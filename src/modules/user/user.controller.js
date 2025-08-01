@@ -82,18 +82,34 @@ const updateUser = catchAsyncError(async (req, res, next) => {
 });
 
 const changeUserPassword = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params;
-  req.body.passwordChangedAt = Date.now();
-  console.log(req.body.passwordChangedAt);
-  const changeUserPassword = await userModel.findByIdAndUpdate(id, req.body, {
-    new: true,
-  });
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user._id; // del token
 
-  changeUserPassword &&
-    res.status(201).json({ message: "success", changeUserPassword });
+  if (!currentPassword || !newPassword) {
+    return next(
+      new AppError("Both currentPassword and newPassword are required", 400)
+    );
+  }
 
-  !changeUserPassword && next(new AppError("User was not found", 404));
+  const user = await userModel.findById(userId);
+  if (!user) {
+    return next(new AppError("User was not found", 404));
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return next(
+      new AppError("Incorrect current password", 401, "currentPassword")
+    );
+  }
+
+  user.password = newPassword;
+  user.passwordChangedAt = Date.now();
+  await user.save();
+
+  res.status(201).json({ message: "success" });
 });
+
 const deleteUser = deleteOne(userModel, "user");
 
 // Guardar el token de notificación push de Expo

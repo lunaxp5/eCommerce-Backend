@@ -26,6 +26,14 @@ userRouter
     User.changeUserPassword
   );
 
+userRouter
+  .route("/change-password")
+  .post(
+    protectedRoutes,
+    validate(changeUserPasswordValidation),
+    User.changeUserPassword
+  );
+
 userRouter.post("/push-token", User.savePushToken);
 userRouter.post("/test-push", User.testPushNotification);
 userRouter.post("/update-push-token", User.updatePushToken);
