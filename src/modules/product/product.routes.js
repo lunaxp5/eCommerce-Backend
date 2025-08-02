@@ -1,6 +1,6 @@
 import express from "express";
 import * as product from "./product.controller.js";
-import { validate } from "../../middlewares/validate.js";
+import { validate, validateParams } from "../../middlewares/validate.js";
 import {
   addProductValidation,
   deleteProductValidation,
@@ -42,6 +42,9 @@ productRouter
     validate(deleteProductValidation),
     product.deleteProduct
   )
-  .get(validate(getSpecificProductValidation), product.getSpecificProduct);
+  .get(
+    validateParams(getSpecificProductValidation),
+    product.getSpecificProduct
+  );
 
 export default productRouter;

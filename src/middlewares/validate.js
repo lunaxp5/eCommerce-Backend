@@ -12,3 +12,16 @@ export const validate = (schema) => {
     }
   };
 };
+
+// Middleware para validar params
+export const validateParams = (schema) => {
+  return (req, res, next) => {
+    const { error } = schema.validate(req.params, { abortEarly: false });
+    if (error) {
+      const firstError = error.details[0];
+      return next(new AppError(firstError.message, 400, firstError.path[0]));
+    } else {
+      next();
+    }
+  };
+};
