@@ -1,7 +1,7 @@
 import express from "express";
 import * as orderController from "./order.controller.js";
 import { protectedRoutes, allowedTo } from "../auth/auth.controller.js";
-import { validate } from "../../middlewares/validate.js";
+import { validate, validateParams } from "../../middlewares/validate.js";
 import { objectIdSchema } from "../review/review.validation.js"; // Assuming you might use a generic objectIdSchema
 // You might need to create specific validation schemas for order creation and updates
 // import { createOrderSchema, updateOrderStatusSchema } from './order.validation.js';
@@ -28,7 +28,7 @@ orderRouter.get(
   "/:id",
   protectedRoutes,
   allowedTo("user", "admin"), // Allow admin to also get specific orders if needed
-  validate(objectIdSchema), // Validate order ID format
+  validateParams(objectIdSchema), // Validate order ID format
   orderController.getSpecificOrder
 );
 
