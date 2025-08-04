@@ -132,6 +132,9 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
 
   await order.save();
 
+  // Populate paymentMethod before returning
+  await order.populate("paymentMethod");
+
   // Optionally, clear the cart after order creation
   await cartModel.findByIdAndDelete(cartId);
 

@@ -1,7 +1,7 @@
 import express from "express";
 import * as paymentMethodController from "./paymentMethod.controller.js";
 import { protectedRoutes, allowedTo } from "../auth/auth.controller.js";
-import { validate } from "../../middlewares/validate.js"; // Assuming you have a validation middleware
+import { validate, validateParams } from "../../middlewares/validate.js"; // Assuming you have a validation middleware
 import {
   createPaymentMethodSchema,
   updatePaymentMethodSchema,
@@ -35,7 +35,7 @@ paymentMethodRouter
   .route("/:id")
   .get(
     protectedRoutes,
-    validate(objectIdSchema), // Add validation for ID
+    validateParams(objectIdSchema), // Add validation for ID
     paymentMethodController.getPaymentMethod
   )
   .put(
