@@ -23,10 +23,13 @@ const orderSchema = new mongoose.Schema(
       dni: { type: String }, // Documento Nacional de Identidad
     },
     shippingAddress: {
-      address: { type: String, required: true }, // direccion -> address
       reference: String, // puntoReferencia -> reference
       name: { type: String, required: true }, // nombreQuienRecibe -> name
       phone: { type: String, required: true }, // telefonoQuienRecibe -> phone
+      coordinates: {
+        latitude: { type: Number, required: true }, // latitud -> latitude
+        longitude: { type: Number, required: true }, // longitud -> longitude
+      },
     },
     paymentMethod: {
       type: mongoose.Types.ObjectId,

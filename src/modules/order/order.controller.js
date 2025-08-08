@@ -42,11 +42,15 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.user._id; // Assuming user ID is available from auth middleware
 
   // Validate that shippingAddress is provided and has the required fields
+  console.log("------- Shipping Address -------");
+  console.log(shippingAddress);
+
   if (
     !shippingAddress ||
-    !shippingAddress.address ||
     !shippingAddress.name ||
-    !shippingAddress.phone
+    !shippingAddress.phone ||
+    !shippingAddress.coordinates.latitude ||
+    !shippingAddress.coordinates.longitude
   ) {
     // Changed from Spanish to English
     return next(
