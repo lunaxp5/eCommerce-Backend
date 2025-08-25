@@ -19,9 +19,9 @@ async function checkAndUpdateStock(cartItems) {
     // item.quantity is the quantity requested in the cart
     if (!item.productId || item.productId.quantity < item.quantity) {
       throw new AppError(
-        `Product ${
-          item.productId?.name || "Unknown Product"
-        } is out of stock or quantity unavailable.`,
+        `El producto  ${
+          item.productId?.title || "Unknown Product"
+        } está agotado o la cantidad no está disponible.`,
         400
       );
     }
@@ -42,8 +42,6 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
   const userId = req.user._id; // Assuming user ID is available from auth middleware
 
   // Validate that shippingAddress is provided and has the required fields
-  console.log("------- Shipping Address -------");
-  console.log(shippingAddress);
 
   if (
     !shippingAddress ||
@@ -68,15 +66,21 @@ export const createOrder = catchAsyncError(async (req, res, next) => {
   }
   if (cart.cartItem.length === 0) {
     // Changed cart.cartItems to cart.cartItem
+    console.log("Cart is empty");
+
     return next(new AppError("Cannot create order from an empty cart", 400));
   }
 
   // Verify payment method
   const paymentMethod = await paymentMethodModel.findById(paymentMethodId);
   if (!paymentMethod) {
+    console.log(" is method");
+
     return next(new AppError("Invalid payment method ID", 400));
   }
   if (!paymentMethod.isActive) {
+    console.log(" is method Selected");
+
     return next(new AppError("Selected payment method is not active", 400));
   }
 
@@ -153,6 +157,7 @@ export const getUserOrders = catchAsyncError(async (req, res, next) => {
   const userId = req.user._id;
   const orders = await orderModel
     .find({ user: userId })
+    .sort({ createdAt: -1 })
     .populate("cartItems.product paymentMethod");
   res.status(200).json({ orders });
 });
