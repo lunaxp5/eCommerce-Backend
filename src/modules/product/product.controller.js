@@ -57,6 +57,8 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 
 const searchProducts = catchAsyncError(async (req, res, next) => {
   // Busca productos por nombre (title) usando el parámetro 'keyword' y paginación
+  // Si no viene el parámetro limit, poner 10 por defecto
+  if (!req.query.limit) req.query.limit = 10;
   let apiFeature = new ApiFeatures(
     productModel.find({ quantity: { $gt: 0 } }),
     req.query
@@ -64,8 +66,29 @@ const searchProducts = catchAsyncError(async (req, res, next) => {
     .search()
     .pagination();
   const PAGE_NUMBER = apiFeature.queryString.page * 1 || 1;
+  const PAGE_LIMIT = parseInt(req.query.limit);
+
+  // Contar el total de productos que cumplen la búsqueda
+  const totalProducts = await productModel.countDocuments({
+    quantity: { $gt: 0 },
+    ...(req.query.keyword
+      ? {
+          $or: [
+            { title: { $regex: req.query.keyword, $options: "i" } },
+            { description: { $regex: req.query.keyword, $options: "i" } },
+          ],
+        }
+      : {}),
+  });
+  const totalPages = Math.ceil(totalProducts / PAGE_LIMIT);
   const products = await apiFeature.mongooseQuery;
-  res.status(200).json({ page: PAGE_NUMBER, message: "success", products });
+  res.status(200).json({
+    currentPage: PAGE_NUMBER,
+    totalPages,
+    totalProducts,
+    message: "success",
+    getAllProducts: products,
+  });
 });
 
 const deleteProduct = deleteOne(productModel, "Product");

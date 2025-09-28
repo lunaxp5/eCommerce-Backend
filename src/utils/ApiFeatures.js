@@ -6,10 +6,12 @@ export class ApiFeatures {
 
   //1-Pagination
   pagination() {
-    const PAGE_LIMIT = 10;
+    const PAGE_LIMIT = this.queryString.limit
+      ? parseInt(this.queryString.limit)
+      : 10;
     let PAGE_NUMBER = this.queryString.page * 1 || 1;
     if (this.queryString.page <= 0) PAGE_NUMBER = 1;
-    const PAGE_SKIP = (PAGE_NUMBER - 1) * PAGE_LIMIT; //2*3
+    const PAGE_SKIP = (PAGE_NUMBER - 1) * PAGE_LIMIT;
 
     this.mongooseQuery.skip(PAGE_SKIP).limit(PAGE_LIMIT);
     return this;
