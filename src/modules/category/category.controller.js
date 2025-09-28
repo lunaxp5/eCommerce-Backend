@@ -29,7 +29,7 @@ const addCategory = catchAsyncError(async (req, res, next) => {
       }
   */
   console.log(req.file);
-  req.body.Image = req.file.filename;
+  req.body.image = req.file.filename;
   req.body.slug = slugify(req.body.name);
   const addcategory = new categoryModel(req.body);
   await addcategory.save();

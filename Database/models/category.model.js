@@ -13,15 +13,14 @@ const categorySchema = new Schema(
       type: String,
       lowercase: true,
     },
-    Image: {
+    image: {
       type: String,
     },
   },
   { timestamps: true }
 );
-categorySchema.post('init',function(doc){
-  doc.Image = `${process.env.BASE_URL}category/${doc.Image}`
+categorySchema.post("init", function (doc) {
+  doc.image = `${process.env.BASE_URL}/category/${doc.image}`;
   console.log(doc);
-
-})
+});
 export const categoryModel = model("category", categorySchema);
