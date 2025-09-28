@@ -57,7 +57,10 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 
 const searchProducts = catchAsyncError(async (req, res, next) => {
   // Busca productos por nombre (title) usando el parámetro 'keyword' y paginación
-  let apiFeature = new ApiFeatures(productModel.find(), req.query)
+  let apiFeature = new ApiFeatures(
+    productModel.find({ quantity: { $gt: 0 } }),
+    req.query
+  )
     .search()
     .pagination();
   const PAGE_NUMBER = apiFeature.queryString.page * 1 || 1;
