@@ -28,6 +28,9 @@ productRouter
   )
   .get(product.getAllProducts);
 
+// Endpoint para búsqueda de productos por nombre con paginación
+productRouter.get("/search", product.searchProducts);
+
 productRouter
   .route("/:id")
   .put(

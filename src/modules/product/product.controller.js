@@ -55,10 +55,21 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
   !updateProduct && next(new AppError("Product was not found", 404));
 });
 
+const searchProducts = catchAsyncError(async (req, res, next) => {
+  // Busca productos por nombre (title) usando el parámetro 'keyword' y paginación
+  let apiFeature = new ApiFeatures(productModel.find(), req.query)
+    .search()
+    .pagination();
+  const PAGE_NUMBER = apiFeature.queryString.page * 1 || 1;
+  const products = await apiFeature.mongooseQuery;
+  res.status(200).json({ page: PAGE_NUMBER, message: "success", products });
+});
+
 const deleteProduct = deleteOne(productModel, "Product");
 export {
   addProduct,
   getAllProducts,
+  searchProducts,
   getSpecificProduct,
   updateProduct,
   deleteProduct,
