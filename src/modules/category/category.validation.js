@@ -8,6 +8,10 @@ const addCategoryValidation = Joi.object({
 
 const updateCategoryValidation = Joi.object({
   name: Joi.string().min(3).trim(),
+  showInHoemePage: Joi.boolean(),
+  image: Joi.string(),
+});
+const updateCategoryValidationParams = Joi.object({
   id: Joi.string().hex().length(24).required(),
 });
 
@@ -19,4 +23,5 @@ export {
   addCategoryValidation,
   updateCategoryValidation,
   deleteCategoryValidation,
+  updateCategoryValidationParams,
 };

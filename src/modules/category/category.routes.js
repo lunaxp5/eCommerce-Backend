@@ -5,8 +5,9 @@ import {
   addCategoryValidation,
   deleteCategoryValidation,
   updateCategoryValidation,
+  updateCategoryValidationParams,
 } from "./category.validation.js";
-import { validate } from "../../middlewares/validate.js";
+import { validate, validateParams } from "../../middlewares/validate.js";
 import { uploadSingleFile } from "../../../multer/multer.js";
 import { allowedTo, protectedRoutes } from "../auth/auth.controller.js";
 
@@ -30,7 +31,9 @@ categoryRouter
   .put(
     protectedRoutes,
     allowedTo("admin"),
+    uploadSingleFile("image", "category"),
     validate(updateCategoryValidation),
+    validateParams(updateCategoryValidationParams),
     category.updateCategory
   )
   .delete(

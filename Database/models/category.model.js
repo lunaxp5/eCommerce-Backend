@@ -16,6 +16,10 @@ const categorySchema = new Schema(
     image: {
       type: String,
     },
+    showInHoemePage: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
