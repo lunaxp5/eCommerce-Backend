@@ -14,6 +14,7 @@ const addProductValidation = Joi.object({
   brand: Joi.string().hex().length(24).allow(null, ""),
   ratingAvg: Joi.number().min(1).max(5).default(5).allow(null, ""),
   ratingCount: Joi.number().min(0).default(0).allow(null, ""),
+  isPublic: Joi.boolean().default(false),
 });
 
 const getSpecificProductValidation = Joi.object({

@@ -56,30 +56,26 @@ const updateProduct = catchAsyncError(async (req, res, next) => {
 });
 
 const searchProducts = catchAsyncError(async (req, res, next) => {
-  // Busca productos por nombre (title) usando el parámetro 'keyword' y paginación
-  // Si no viene el parámetro limit, poner 10 por defecto
+  // Busca productos por nombre (title) o descripción usando 'keyword' y filtra por categoría si se pasa 'category'
   if (!req.query.limit) req.query.limit = 10;
+  const filter = { quantity: { $gt: 0 } };
+  if (req.query.category) {
+    filter.category = req.query.category;
+  }
+  if (req.query.keyword) {
+    filter.$or = [
+      { title: { $regex: req.query.keyword, $options: "i" } },
+      { description: { $regex: req.query.keyword, $options: "i" } },
+    ];
+  }
   let apiFeature = new ApiFeatures(
-    productModel.find({ quantity: { $gt: 0 } }),
+    productModel.find(filter),
     req.query
-  )
-    .search()
-    .pagination();
+  ).pagination();
   const PAGE_NUMBER = apiFeature.queryString.page * 1 || 1;
   const PAGE_LIMIT = parseInt(req.query.limit);
 
-  // Contar el total de productos que cumplen la búsqueda
-  const totalProducts = await productModel.countDocuments({
-    quantity: { $gt: 0 },
-    ...(req.query.keyword
-      ? {
-          $or: [
-            { title: { $regex: req.query.keyword, $options: "i" } },
-            { description: { $regex: req.query.keyword, $options: "i" } },
-          ],
-        }
-      : {}),
-  });
+  const totalProducts = await productModel.countDocuments(filter);
   const totalPages = Math.ceil(totalProducts / PAGE_LIMIT);
   const products = await apiFeature.mongooseQuery;
   res.status(200).json({
