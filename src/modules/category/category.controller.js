@@ -79,17 +79,35 @@ const getAllCategories = catchAsyncError(async (req, res, next) => {
 });
 
 const updateCategory = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  req.body.slug = slugify(req.body.name);
-  const updateCategory = await categoryModel.findByIdAndUpdate(id, req.body, {
-    new: true,
-  });
-
-  updateCategory &&
-    res.status(201).json({ message: "success", updateCategory });
-
-  !updateCategory && next(new AppError("category was not found", 404));
+  try {
+    const { id } = req.params;
+    console.log("REQ.BODY:", req.body);
+    // Solo genera slug si name está presente
+    if (req.body.name) {
+      req.body.slug = slugify(req.body.name);
+    }
+    // Si se sube una nueva imagen, actualiza el campo image
+    if (req.file && req.file.filename) {
+      req.body.image = req.file.filename;
+    }
+    const updateCategory = await categoryModel.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+    // Si hay imagen, actualiza la ruta completa
+    if (updateCategory && updateCategory.image) {
+      updateCategory.image = `${updateCategory.image}`;
+    }
+    if (updateCategory) {
+      return res.status(201).json({ message: "success", updateCategory });
+    } else {
+      return next(new AppError("category was not found", 404));
+    }
+  } catch (err) {
+    console.error("Error en updateCategory:", err);
+    return res
+      .status(500)
+      .json({ message: "error", error: err.message, stack: err.stack });
+  }
 });
 
 const deleteCategory = deleteOne(categoryModel, "category");
