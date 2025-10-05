@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 export function dbConnection() {
   mongoose
-    .connect(`mongodb+srv://lunaxp5:Abc.1234@cluster0.tbdzmog.mongodb.net/`)
+    .connect(process.env.MONGODB_URI)
     .then(() => {
       console.log("DB Connected Succesfully");
     })

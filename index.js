@@ -8,6 +8,7 @@ import { createOnlineOrder } from "./src/modules/order/order.controller.js";
 import swaggerUi from "swagger-ui-express";
 import fs from "fs";
 import path from "path";
+import "./src/jobs/cancelOldOrdersJob.js";
 
 import specs from "./swagger-docs.js";
 
